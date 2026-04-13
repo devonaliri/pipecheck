@@ -49,6 +49,13 @@ Pass `prefer='left'` (default) or `prefer='right'` to control which schema
 "wins" when a conflict is detected.  The losing value is still captured in
 the `MergeConflict` list so nothing is silently discarded.
 
+## Merging schema metadata
+
+When `left` and `right` carry different top-level metadata (e.g. `name` or
+`version`), `merge_schemas` keeps the value from the preferred side.  A
+`MergeConflict` with `column_name=None` is recorded so the difference is
+visible in `result.conflicts`.
+
 ## Example
 
 ```python
@@ -76,8 +83,9 @@ right = PipelineSchema(
 
 result = merge_schemas(left, right, prefer="right")
 print(result)
-# Merged schema 'orders' with 3 column(s).
+# Merged schema 'orders' (v1.1) with 3 column(s).
 for conflict in result.conflicts:
     print(conflict)
+# Conflict on schema 'version': '1.0' vs '1.1'
 # Conflict on 'amount.data_type': 'string' vs 'float'
 ```
