@@ -78,3 +78,16 @@ class TestScoreSchema:
         for score, expected in [(95, "A"), (80, "B"), (65, "C"), (45, "D"), (20, "F")]:
             r = HealthReport(schema_name="x", score=score)
             assert r.grade == expected
+
+    def test_multiple_issues_accumulate_deductions(self):
+        """Schema with several problems should score lower than one with a single problem."""
+        schema_one_issue = _make_schema(description="")
+        schema_many_issues = _make_schema(
+            description="",
+            version="",
+            columns=[ColumnSchema(name="x", data_type="", description="")],
+        )
+        report_one = score_schema(schema_one_issue)
+        report_many = score_schema(schema_many_issues)
+        assert report_many.score < report_one.score
+        assert len(report_many.issues) > len(report_one.issues)
