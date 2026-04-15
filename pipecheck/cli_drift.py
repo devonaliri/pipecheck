@@ -52,6 +52,12 @@ def cmd_drift(args: argparse.Namespace) -> int:
             return 1
         return 0
         
+    except FileNotFoundError as e:
+        print(f"Error: Schema file not found: {e}", file=sys.stderr)
+        return 2
+    except PermissionError as e:
+        print(f"Error: Permission denied accessing baseline directory: {e}", file=sys.stderr)
+        return 2
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
