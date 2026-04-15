@@ -61,6 +61,12 @@ class TestGroupByTag:
         result = group_by_tag([])
         assert result.buckets == {}
 
+    def test_schema_not_duplicated_within_same_tag(self):
+        """A schema with a repeated tag should only appear once in that bucket."""
+        s = _make_schema("orders", tags=["finance", "finance"])
+        result = group_by_tag([s])
+        assert result.schemas_in("finance").count(s) == 1
+
 
 class TestGroupByField:
     def test_groups_by_version(self):
@@ -83,3 +89,10 @@ class TestGroupByField:
     def test_schemas_in_unknown_group_returns_empty(self):
         result = group_by_field([], "version")
         assert result.schemas_in("nonexistent") == []
+
+    def test_multiple_schemas_same_field_value(self):
+        """Schemas sharing a field value should all appear in the same bucket."""
+        s1 = _make_schema("a", version="1.0")
+        s2 = _make_schema("b", version="1.0")
+        result = group_by_field([s1, s2], "version")
+        assert result.schemas_in("1.0") == [s1, s2]
