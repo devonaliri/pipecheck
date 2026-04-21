@@ -18,6 +18,8 @@ pipecheck search [OPTIONS] SCHEMA_FILE [SCHEMA_FILE ...]
 | `--name TEXT` | Filter schemas whose name contains TEXT (case-insensitive) |
 | `--json` | Output results as JSON instead of plain text |
 
+> **Note:** If no filters are provided, all loaded schemas are returned.
+
 ## Examples
 
 ### Find schemas with an `email` column
@@ -60,6 +62,17 @@ pipecheck search schemas/*.yaml --column-name id --json
 ]
 ```
 
+### Search by schema name
+
+```bash
+pipecheck search schemas/*.yaml --name user
+```
+
+```
+users (v1.0)
+user_events (v2.1) — matched columns: (none)
+```
+
 ## Programmatic API
 
 ```python
@@ -69,3 +82,12 @@ results = search_schemas(my_schemas, SearchQuery(column_type="json", tag="events
 for r in results:
     print(r)
 ```
+
+### `SearchQuery` fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `column_name` | `str \| None` | Substring match against column names (case-insensitive) |
+| `column_type` | `str \| None` | Exact match against column type strings |
+| `tag` | `str \| None` | Exact match against schema tags |
+| `name` | `str \| None` | Substring match against schema name (case-insensitive) |
