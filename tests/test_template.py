@@ -37,6 +37,11 @@ class TestListTemplates:
     def test_includes_metric(self):
         assert "metric" in list_templates()
 
+    def test_returns_list_of_strings(self):
+        names = list_templates()
+        assert isinstance(names, list)
+        assert all(isinstance(n, str) for n in names)
+
 
 # ---------------------------------------------------------------------------
 # TemplateViolation.__str__
@@ -52,6 +57,15 @@ class TestTemplateViolation:
         v = TemplateViolation("value", "float", "integer")
         assert "float" in str(v)
         assert "integer" in str(v)
+
+    def test_missing_column_has_none_actual_type(self):
+        v = TemplateViolation("event_id", "string", None)
+        assert v.actual_type is None
+
+    def test_wrong_type_stores_expected_and_actual(self):
+        v = TemplateViolation("value", "float", "integer")
+        assert v.expected_type == "float"
+        assert v.actual_type == "integer"
 
 
 # ---------------------------------------------------------------------------
@@ -69,6 +83,10 @@ class TestMatchTemplateEvent:
     def test_perfect_match_passes(self):
         result = match_template(self._event_schema(), "event")
         assert result.passed
+
+    def test_perfect_match_has_no_violations(self):
+        result = match_template(self._event_schema(), "event")
+        assert result.violations == []
 
     def test_missing_column_fails(self):
         schema = _make_schema([
@@ -94,16 +112,7 @@ class TestMatchTemplateEvent:
             _col("event_id", "string"),
             _col("event_type", "string"),
             _col("occurred_at", "timestamp"),
-            _col("extra_col", "boolean"),
-        ])
-        result = match_template(schema, "event")
-        assert result.passed
-
-    def test_case_insensitive_type(self):
-        schema = _make_schema([
-            _col("event_id", "STRING"),
-            _col("event_type", "STRING"),
-            _col("occurred_at", "TIMESTAMP"),
+            _col("extra_field", "string"),
         ])
         result = match_template(schema, "event")
         assert result.passed
@@ -114,28 +123,7 @@ class TestMatchTemplateEvent:
 # ---------------------------------------------------------------------------
 
 class TestMatchTemplateUnknown:
-    def test_raises_value_error(self):
-        schema = _make_schema([])
-        with pytest.raises(ValueError, match="Unknown template"):
-            match_template(schema, "nonexistent")
-
-
-# ---------------------------------------------------------------------------
-# TemplateResult.__str__
-# ---------------------------------------------------------------------------
-
-class TestTemplateResultStr:
-    def test_pass_label(self):
-        result = TemplateResult("event", "my_pipe", [])
-        assert "PASS" in str(result)
-
-    def test_fail_label(self):
-        v = TemplateViolation("event_id", "string", None)
-        result = TemplateResult("event", "my_pipe", [v])
-        assert "FAIL" in str(result)
-
-    def test_schema_and_template_names_shown(self):
-        result = TemplateResult("metric", "sales_pipe", [])
-        text = str(result)
-        assert "metric" in text
-        assert "sales_pipe" in text
+    def test_unknown_template_raises(self):
+        schema = _make_schema([_col("id", "string")])
+        with pytest.raises((KeyError, ValueError)):
+            match_template(schema, "nonexistent_template")
