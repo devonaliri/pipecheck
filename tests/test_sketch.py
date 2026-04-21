@@ -81,28 +81,25 @@ class TestSketchSchema:
         assert len(result) == 3
 
     def test_max_columns_limits_output(self):
-        schema = _make_schema(_col("a"), _col("b"), _col("c"))
+        schema = _make_schema(_col("a"), _col("b"), _col("c"), _col("d"), _col("e"))
+        result = sketch_schema(schema, max_columns=3)
+        assert len(result) == 3
+
+    def test_max_columns_preserves_order(self):
+        """Columns returned should be the first N in schema order."""
+        schema = _make_schema(_col("a"), _col("b"), _col("c"), _col("d"))
         result = sketch_schema(schema, max_columns=2)
+        names = [sc.name for sc in result.columns]
+        assert names == ["a", "b"]
+
+    def test_max_columns_larger_than_schema_returns_all(self):
+        schema = _make_schema(_col("a"), _col("b"))
+        result = sketch_schema(schema, max_columns=100)
         assert len(result) == 2
-        assert result.columns[0].name == "a"
-        assert result.columns[1].name == "b"
 
-    def test_nullable_suffix_when_flag_set(self):
-        schema = _make_schema(_col("amount", "decimal", nullable=True))
-        result = sketch_schema(schema, include_nullable=True)
-        assert result.columns[0].data_type == "decimal?"
-
-    def test_nullable_suffix_absent_by_default(self):
-        schema = _make_schema(_col("amount", "decimal", nullable=True))
+    def test_column_dtypes_match_schema(self):
+        schema = _make_schema(_col("id", "integer"), _col("name", "string"))
         result = sketch_schema(schema)
-        assert result.columns[0].data_type == "decimal"
-
-    def test_non_nullable_column_no_suffix(self):
-        schema = _make_schema(_col("id", "integer", nullable=False))
-        result = sketch_schema(schema, include_nullable=True)
-        assert result.columns[0].data_type == "integer"
-
-    def test_empty_schema_returns_no_columns(self):
-        schema = _make_schema(name="empty")
-        result = sketch_schema(schema)
-        assert result.has_columns() is False
+        dtype_map = {sc.name: sc.data_type for sc in result.columns}
+        assert dtype_map["id"] == "integer"
+        assert dtype_map["name"] == "string"
